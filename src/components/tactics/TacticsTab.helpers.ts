@@ -1,8 +1,11 @@
 import { calcAge, calcOvr } from "../../lib/helpers";
 import type { PlayerData } from "../../store/gameStore";
 import {
+  applyLineupDrop,
+  applyLineupSwap,
   buildPitchRows,
   buildStartingXIIds,
+  type DragState,
   getPreferredPositions,
   isPlayerOutOfPosition,
   normalisePosition,
@@ -47,6 +50,7 @@ const POSITION_ORDER: Record<string, number> = {
 };
 
 interface TacticsPlayerSortContext {
+  currentDate: string;
   section: SquadSection;
   sortDir: SortDirection;
   sortKey: SortKey;
@@ -68,6 +72,26 @@ interface ResolveStartingXiIdsOptions {
   savedStartingXiIds: string[];
 }
 
+export interface TacticsLineupSelectionState {
+  comparePlayerId: string | null;
+  comparePlayerSection: SquadSection | null;
+  selectedPlayerId: string | null;
+  selectedPlayerSection: SquadSection | null;
+}
+
+interface DroppedLineupXiIdsOptions {
+  currentXiIds: string[];
+  draggedPlayerId: string;
+  dragState: DragState | null;
+  slotIndex: number;
+  xiIds: Set<string>;
+}
+
+interface ConfirmedSwapXiIdsOptions {
+  currentXiIds: string[];
+  selectionState: TacticsLineupSelectionState;
+}
+
 export function buildTacticsRoster(
   players: PlayerData[],
   teamId: string,
@@ -77,9 +101,9 @@ export function buildTacticsRoster(
     .sort((leftPlayer, rightPlayer) => {
       return (
         (POSITION_ORDER[normalisePosition(leftPlayer.position)] ?? 99) -
-          (POSITION_ORDER[normalisePosition(rightPlayer.position)] ?? 99) ||
+        (POSITION_ORDER[normalisePosition(rightPlayer.position)] ?? 99) ||
         calcOvr(rightPlayer, rightPlayer.natural_position || rightPlayer.position) -
-          calcOvr(leftPlayer, leftPlayer.natural_position || leftPlayer.position)
+        calcOvr(leftPlayer, leftPlayer.natural_position || leftPlayer.position)
       );
     });
 }
@@ -139,7 +163,7 @@ export function sortTacticsPlayers(
   players: PlayerData[],
   context: TacticsPlayerSortContext,
 ): PlayerData[] {
-  const { section, sortDir, sortKey, xiActivePosition } = context;
+  const { currentDate, section, sortDir, sortKey, xiActivePosition } = context;
   const sortedPlayers = [...players].sort((leftPlayer, rightPlayer) => {
     const leftPosition = getSectionPlayerPosition(leftPlayer, section, xiActivePosition);
     const rightPosition = getSectionPlayerPosition(rightPlayer, section, xiActivePosition);
@@ -148,13 +172,16 @@ export function sortTacticsPlayers(
       case "pos":
         return (
           (POSITION_ORDER[normalisePosition(leftPosition)] ?? 99) -
-            (POSITION_ORDER[normalisePosition(rightPosition)] ?? 99) ||
+          (POSITION_ORDER[normalisePosition(rightPosition)] ?? 99) ||
           calcOvr(rightPlayer, rightPosition) - calcOvr(leftPlayer, leftPosition)
         );
       case "name":
         return leftPlayer.full_name.localeCompare(rightPlayer.full_name);
       case "age":
-        return calcAge(leftPlayer.date_of_birth) - calcAge(rightPlayer.date_of_birth);
+        return (
+          calcAge(leftPlayer.date_of_birth, currentDate) -
+          calcAge(rightPlayer.date_of_birth, currentDate)
+        );
       case "condition":
         return leftPlayer.condition - rightPlayer.condition;
       case "morale":
@@ -254,6 +281,129 @@ export function getSelectedAndComparePlayers(
     comparePlayer,
     selectedPlayer,
   };
+}
+
+export function getEmptyTacticsLineupSelection(): TacticsLineupSelectionState {
+  return {
+    comparePlayerId: null,
+    comparePlayerSection: null,
+    selectedPlayerId: null,
+    selectedPlayerSection: null,
+  };
+}
+
+export function getNextTacticsLineupSelection(
+  currentState: TacticsLineupSelectionState,
+  playerId: string,
+  section: SquadSection,
+): TacticsLineupSelectionState {
+  if (!currentState.selectedPlayerId || !currentState.selectedPlayerSection) {
+    return {
+      selectedPlayerId: playerId,
+      selectedPlayerSection: section,
+      comparePlayerId: null,
+      comparePlayerSection: null,
+    };
+  }
+
+  if (
+    currentState.selectedPlayerId === playerId &&
+    currentState.selectedPlayerSection === section
+  ) {
+    if (currentState.comparePlayerId && currentState.comparePlayerSection) {
+      return {
+        selectedPlayerId: currentState.comparePlayerId,
+        selectedPlayerSection: currentState.comparePlayerSection,
+        comparePlayerId: null,
+        comparePlayerSection: null,
+      };
+    }
+
+    return getEmptyTacticsLineupSelection();
+  }
+
+  if (
+    currentState.comparePlayerId === playerId &&
+    currentState.comparePlayerSection === section
+  ) {
+    return {
+      ...currentState,
+      comparePlayerId: null,
+      comparePlayerSection: null,
+    };
+  }
+
+  return {
+    ...currentState,
+    comparePlayerId: playerId,
+    comparePlayerSection: section,
+  };
+}
+
+export function getDroppedLineupXiIds({
+  currentXiIds,
+  draggedPlayerId,
+  dragState,
+  slotIndex,
+  xiIds,
+}: DroppedLineupXiIdsOptions): string[] | null {
+  const resolvedDragState =
+    dragState ??
+    (draggedPlayerId
+      ? {
+        playerId: draggedPlayerId,
+        from: xiIds.has(draggedPlayerId) ? "xi" : "bench",
+        slotIndex: xiIds.has(draggedPlayerId)
+          ? currentXiIds.indexOf(draggedPlayerId)
+          : null,
+      }
+      : null);
+
+  if (!resolvedDragState) {
+    return null;
+  }
+
+  const nextXiIds = applyLineupDrop(currentXiIds, resolvedDragState, slotIndex);
+
+  if (nextXiIds.join(",") === currentXiIds.join(",")) {
+    return null;
+  }
+
+  return nextXiIds;
+}
+
+export function getConfirmedSwapXiIds({
+  currentXiIds,
+  selectionState,
+}: ConfirmedSwapXiIdsOptions): string[] | null {
+  const {
+    comparePlayerId,
+    comparePlayerSection,
+    selectedPlayerId,
+    selectedPlayerSection,
+  } = selectionState;
+
+  if (
+    !selectedPlayerId ||
+    !selectedPlayerSection ||
+    !comparePlayerId ||
+    !comparePlayerSection
+  ) {
+    return null;
+  }
+
+  const nextXiIds = applyLineupSwap(
+    currentXiIds,
+    { id: selectedPlayerId, from: selectedPlayerSection },
+    comparePlayerId,
+    comparePlayerSection,
+  );
+
+  if (!nextXiIds || nextXiIds.join(",") === currentXiIds.join(",")) {
+    return null;
+  }
+
+  return nextXiIds;
 }
 
 export function getOverallRatingClassName(overallRating: number): string {

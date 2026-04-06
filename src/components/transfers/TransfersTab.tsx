@@ -34,12 +34,9 @@ import {
   translatePositionAbbreviation,
 } from "../squad/SquadTab.helpers";
 import { resolveSeasonContext } from "../../lib/seasonContext";
-import NegotiationFeedbackPanel, {
-  type NegotiationFeedbackPanelData,
-} from "../NegotiationFeedbackPanel";
+import type { NegotiationFeedbackPanelData } from "../NegotiationFeedbackPanel";
 import TransferBidModal from "./TransferBidModal";
 import TransferCounterOfferModal from "./TransferCounterOfferModal";
-import TransferNegotiationHistory from "./TransferNegotiationHistory";
 import {
   counterOffer,
   makeTransferBid,
@@ -543,7 +540,10 @@ export default function TransfersTab({
                       player,
                       player.natural_position || player.position,
                     );
-                    const age = calcAge(player.date_of_birth);
+                    const age = calcAge(
+                      player.date_of_birth,
+                      gameState.clock.current_date,
+                    );
                     const offersForThisPlayer = player.transfer_offers;
                     return (
                       <tr
@@ -742,7 +742,7 @@ export default function TransfersTab({
           teams={gameState.teams}
           bidAmount={bidAmount}
           onBidAmountChange={setBidAmount}
-          myTeam={myTeam}
+          myTeam={myTeam ?? null}
           bidFee={bidFee}
           bidProjection={bidProjection}
           bidFeedback={bidFeedback}

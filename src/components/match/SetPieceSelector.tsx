@@ -1,89 +1,15 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PlayerData } from "../../store/gameStore";
-import { normalisePosition } from "../squad/SquadTab.helpers";
+import { translatePositionAbbreviation } from "../squad/SquadTab.helpers";
 import { Badge } from "../ui";
 import { ArrowUpDown, Check } from "lucide-react";
-
-function getStatAttributeKey(label: string): string | null {
-  switch (label) {
-    case "SHO":
-      return "shooting";
-    case "COM":
-      return "composure";
-    case "PAS":
-      return "passing";
-    case "VIS":
-      return "vision";
-    case "LDR":
-      return "leadership";
-    case "TMW":
-      return "teamwork";
-    default:
-      return null;
-  }
-}
-
-function getStatColorClassName(value: number): string {
-  if (value >= 70) {
-    return "text-primary-300";
-  }
-
-  if (value >= 50) {
-    return "text-gray-100";
-  }
-
-  return "text-gray-400";
-}
-
-export function getSetPieceStats(
-  role: string,
-  p: PlayerData,
-): { score: number; stats: { label: string; value: number }[] } {
-  const a = p.attributes;
-  switch (role) {
-    case "penalty":
-      return {
-        score: Math.round((a.shooting + a.composure) / 2),
-        stats: [
-          { label: "SHO", value: a.shooting },
-          { label: "COM", value: a.composure },
-        ],
-      };
-    case "freekick":
-      return {
-        score: Math.round((a.passing + a.vision + a.shooting / 2) / 2.5),
-        stats: [
-          { label: "PAS", value: a.passing },
-          { label: "VIS", value: a.vision },
-          { label: "SHO", value: a.shooting },
-        ],
-      };
-    case "corner":
-      return {
-        score: Math.round((a.passing + a.vision) / 2),
-        stats: [
-          { label: "PAS", value: a.passing },
-          { label: "VIS", value: a.vision },
-        ],
-      };
-    case "captain":
-    case "vicecaptain":
-      return {
-        score: Math.round((a.leadership + a.teamwork) / 2),
-        stats: [
-          { label: "LDR", value: a.leadership },
-          { label: "TMW", value: a.teamwork },
-        ],
-      };
-    default:
-      return { score: 0, stats: [] };
-  }
-}
-
-function roleAllowsGoalkeeper(role: string): boolean {
-  return role === "captain" || role === "vicecaptain";
-}
+import {
+  getSetPieceStatAttributeKey,
+  getSetPieceStatColorClassName,
+  getSetPieceStats,
+  roleAllowsGoalkeeper,
+} from "./setPieceUtils";
 
 export default function SetPieceSelector({
   label,
@@ -125,21 +51,13 @@ export default function SetPieceSelector({
     );
 
   function getTranslatedStatLabel(label: string): string {
-    const attributeKey = getStatAttributeKey(label);
+    const attributeKey = getSetPieceStatAttributeKey(label);
 
     if (!attributeKey) {
       return label;
     }
 
     return t(`common.attributes.${attributeKey}`, { defaultValue: label });
-  }
-
-  function getTranslatedPositionAbbreviation(position: string): string {
-    const normalizedPosition = normalisePosition(position);
-
-    return t(`common.posAbbr.${normalizedPosition}`, {
-      defaultValue: normalizedPosition.substring(0, 3).toUpperCase(),
-    });
   }
 
   return (
@@ -150,10 +68,10 @@ export default function SetPieceSelector({
       >
         {icon}
         <div className="flex-1 text-left">
-            <p className="text-xs font-heading font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+          <p className="text-xs font-heading font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
             {label}
           </p>
-            <p className="text-sm text-gray-800 dark:text-gray-200 font-medium">
+          <p className="text-sm text-gray-800 dark:text-gray-200 font-medium">
             {currentPlayer ? currentPlayer.name : t("match.notAssigned")}
           </p>
         </div>
@@ -163,23 +81,23 @@ export default function SetPieceSelector({
               <span
                 key={s.label}
                 title={getTranslatedStatLabel(s.label)}
-                 className="inline-flex items-center gap-1 rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-navy-800 px-2 py-1 text-xs font-heading font-bold text-gray-800 dark:text-gray-100"
+                className="inline-flex items-center gap-1 rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-navy-800 px-2 py-1 text-xs font-heading font-bold text-gray-800 dark:text-gray-100"
               >
-                 <span className="text-gray-600 dark:text-gray-300">
+                <span className="text-gray-600 dark:text-gray-300">
                   {getTranslatedStatLabel(s.label)}
                 </span>
-                <span className={getStatColorClassName(s.value)}>
+                <span className={getSetPieceStatColorClassName(s.value)}>
                   {s.value}
                 </span>
               </span>
             ))}
           </div>
         )}
-         <ArrowUpDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+        <ArrowUpDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
       </button>
 
       {expanded && (
-         <div className="mt-1 bg-white dark:bg-navy-700 rounded-lg border border-gray-200 dark:border-navy-600 p-2 flex flex-col gap-1 max-h-56 overflow-auto transition-colors duration-300">
+        <div className="mt-1 bg-white dark:bg-navy-700 rounded-lg border border-gray-200 dark:border-navy-600 p-2 flex flex-col gap-1 max-h-56 overflow-auto transition-colors duration-300">
           {sortedPlayers.map((p) => {
             const isCurrent = p.id === currentId;
             return (
@@ -189,38 +107,36 @@ export default function SetPieceSelector({
                   onSelect(p.id);
                   setExpanded(false);
                 }}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded text-left transition-colors ${
-                  isCurrent
-                     ? "bg-primary-500/20 text-primary-500 dark:text-primary-400"
-                     : "hover:bg-gray-100 dark:hover:bg-navy-600 text-gray-700 dark:text-gray-300"
-                }`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded text-left transition-colors ${isCurrent
+                    ? "bg-primary-500/20 text-primary-500 dark:text-primary-400"
+                    : "hover:bg-gray-100 dark:hover:bg-navy-600 text-gray-700 dark:text-gray-300"
+                  }`}
               >
                 {isCurrent && <Check className="w-3 h-3 text-primary-400" />}
                 <span className="text-sm font-medium flex-1 truncate">
                   {p.name}
                 </span>
                 <Badge variant="neutral" size="sm">
-                  {getTranslatedPositionAbbreviation(p.position)}
+                  {translatePositionAbbreviation(t, p.position)}
                 </Badge>
                 {p.spStats.stats.map((s) => (
                   <span
                     key={s.label}
                     title={getTranslatedStatLabel(s.label)}
-                     className="w-10 rounded-md bg-gray-100 dark:bg-navy-800/80 px-1.5 py-1 text-center text-xs font-heading font-bold transition-colors duration-300"
+                    className="w-10 rounded-md bg-gray-100 dark:bg-navy-800/80 px-1.5 py-1 text-center text-xs font-heading font-bold transition-colors duration-300"
                   >
-                    <span className={getStatColorClassName(s.value)}>
+                    <span className={getSetPieceStatColorClassName(s.value)}>
                       {s.value}
                     </span>
                   </span>
                 ))}
                 <span
-                  className={`text-xs font-heading font-bold w-8 text-right ${
-                    p.spStats.score >= 70
+                  className={`text-xs font-heading font-bold w-8 text-right ${p.spStats.score >= 70
                       ? "text-primary-300"
                       : p.spStats.score >= 50
                         ? "text-gray-100"
                         : "text-gray-400"
-                  }`}
+                    }`}
                 >
                   {p.spStats.score}
                 </span>
@@ -229,7 +145,7 @@ export default function SetPieceSelector({
           })}
           {/* Column headers */}
           {sortedPlayers.length > 0 && (
-             <div className="mt-1 flex items-center gap-2 border-t border-gray-200 dark:border-navy-600 px-3 py-2 text-xs font-heading font-bold text-gray-600 dark:text-gray-300">
+            <div className="mt-1 flex items-center gap-2 border-t border-gray-200 dark:border-navy-600 px-3 py-2 text-xs font-heading font-bold text-gray-600 dark:text-gray-300">
               <span className="flex-1" />
               <span className="w-8" />
               {sortedPlayers[0].spStats.stats.map((s) => (

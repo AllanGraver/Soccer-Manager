@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { getSetPieceStats } from "./SetPieceSelector";
+import { getSetPieceStats } from "./setPieceUtils";
 import SetPieceSelector from "./SetPieceSelector";
 import type { PlayerData } from "../../store/gameStore";
 
@@ -162,7 +162,7 @@ describe("SetPieceSelector component", () => {
         currentId={null}
         players={players}
         allSquad={allSquad}
-        onSelect={() => {}}
+        onSelect={() => { }}
       />,
     );
     expect(screen.getByText("Penalty Taker")).toBeInTheDocument();
@@ -179,13 +179,13 @@ describe("SetPieceSelector component", () => {
         currentId="p1"
         players={players}
         allSquad={allSquad}
-        onSelect={() => {}}
+        onSelect={() => { }}
       />,
     );
     expect(screen.getByText("John Smith")).toBeInTheDocument();
   });
 
-  it("normalizes detailed positions to translated core abbreviations", () => {
+  it("uses shared translated position abbreviations", () => {
     render(
       <SetPieceSelector
         label="Penalty Taker"
@@ -196,13 +196,13 @@ describe("SetPieceSelector component", () => {
           { id: "cb", name: "Center Back Player", position: "Center Back" },
         ]}
         allSquad={[makePlayer({ id: "cb", position: "Center Back" })]}
-        onSelect={() => {}}
+        onSelect={() => { }}
       />,
     );
 
     fireEvent.click(screen.getByText("Penalty Taker"));
 
-    expect(screen.getByText("common.posAbbr.Defender")).toBeInTheDocument();
+    expect(screen.getByText("common.posAbbr.CenterBack")).toBeInTheDocument();
   });
 
   it("expands dropdown on click and shows non-GK players sorted by score", () => {
@@ -214,7 +214,7 @@ describe("SetPieceSelector component", () => {
         currentId={null}
         players={players}
         allSquad={allSquad}
-        onSelect={() => {}}
+        onSelect={() => { }}
       />,
     );
     // Click to expand
@@ -235,7 +235,7 @@ describe("SetPieceSelector component", () => {
         currentId="p1"
         players={players}
         allSquad={allSquad}
-        onSelect={() => {}}
+        onSelect={() => { }}
       />,
     );
 
@@ -278,7 +278,7 @@ describe("SetPieceSelector component", () => {
         currentId="p1"
         players={players}
         allSquad={allSquad}
-        onSelect={() => {}}
+        onSelect={() => { }}
       />,
     );
     fireEvent.click(screen.getByText("Penalty Taker"));
@@ -299,7 +299,7 @@ describe("SetPieceSelector component", () => {
         currentId={null}
         players={players}
         allSquad={allSquad}
-        onSelect={() => {}}
+        onSelect={() => { }}
       />,
     );
 

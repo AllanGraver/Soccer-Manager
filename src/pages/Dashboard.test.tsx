@@ -167,7 +167,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 
 vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: () => ({
-    onCloseRequested: vi.fn(() => Promise.resolve(() => {})),
+    onCloseRequested: vi.fn(() => Promise.resolve(() => { })),
     destroy: vi.fn(),
   }),
 }));
@@ -322,21 +322,36 @@ describe("Dashboard", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Tab Content Home")).toBeInTheDocument();
+      expect(screen.getByText("Alerts Mock")).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByText("search-player"));
-    expect(screen.getByText("Player Profile Mock")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Player Profile Mock")).toBeInTheDocument();
+      expect(screen.queryByText("Alerts Mock")).not.toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByText("player-select-team"));
-    expect(screen.getByText("Team Profile Mock")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Team Profile Mock")).toBeInTheDocument();
+      expect(screen.queryByText("Alerts Mock")).not.toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByText("header-back"));
-    expect(screen.getByText("Player Profile Mock")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Player Profile Mock")).toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByText("header-back"));
-    expect(screen.getByText("Tab Content Home")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Tab Content Home")).toBeInTheDocument();
+      expect(screen.getByText("Alerts Mock")).toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByText("nav-inbox"));
-    expect(screen.getByText("Tab Content Inbox")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Tab Content Inbox")).toBeInTheDocument();
+      expect(screen.getByText("Alerts Mock")).toBeInTheDocument();
+    });
   });
 });

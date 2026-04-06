@@ -2,11 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   getPlayerName,
   phaseLabel,
-  calcOvr,
   getEventDisplay,
   resolveMatchFixture,
 } from "./helpers";
-import i18n from "../../i18n";
+import i18n, { changeAppLanguage, i18nReady } from "../../i18n";
 import { getTeamTalkOptions } from "./types";
 import type { MatchSnapshot, EnginePlayerData, EngineTeamData } from "./types";
 import type { GameStateData } from "../../store/gameStore";
@@ -157,31 +156,13 @@ describe("phaseLabel", () => {
 });
 
 // ---------------------------------------------------------------------------
-// calcOvr (match version — averages all attrs)
-// ---------------------------------------------------------------------------
-
-describe("calcOvr (match)", () => {
-  it("averages all attribute values", () => {
-    expect(calcOvr({ pace: 80, shooting: 60, passing: 70 })).toBe(70);
-  });
-
-  it("rounds to nearest integer", () => {
-    expect(calcOvr({ pace: 71, shooting: 72 })).toBe(72); // 143/2 = 71.5 → 72
-  });
-
-  it("returns 0 for empty attributes", () => {
-    expect(calcOvr({})).toBe(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
 // getEventDisplay
 // ---------------------------------------------------------------------------
 
 describe("getEventDisplay", () => {
   it("returns known display for Goal event", () => {
     const display = getEventDisplay({ minute: 10, event_type: "Goal", side: "Home", zone: "Box", player_id: "p1", secondary_player_id: null });
-    expect(display.color).toBe("text-accent-400");
+    expect(display.color).toBe("text-accent-700 dark:text-accent-400");
     expect(display.important).toBe(true);
   });
 
@@ -193,20 +174,21 @@ describe("getEventDisplay", () => {
 
   it("returns known display for ShotSaved (non-important)", () => {
     const display = getEventDisplay({ minute: 30, event_type: "ShotSaved", side: "Home", zone: "Box", player_id: "p1", secondary_player_id: null });
-    expect(display.color).toBe("text-green-400");
+    expect(display.color).toBe("text-green-700 dark:text-green-400");
     expect(display.important).toBe(false);
   });
 
   it("returns default display for unknown event type", () => {
     const display = getEventDisplay({ minute: 1, event_type: "UnknownEvent", side: "Home", zone: "Midfield", player_id: null, secondary_player_id: null });
-    expect(display.color).toBe("text-gray-400");
+    expect(display.color).toBe("text-gray-700 dark:text-gray-400");
     expect(display.important).toBe(false);
   });
 });
 
 describe("getTeamTalkOptions", () => {
   it("returns the expected english team talk labels and descriptions", async () => {
-    await i18n.changeLanguage("en");
+    await i18nReady;
+    await changeAppLanguage("en");
 
     const options = getTeamTalkOptions(i18n.t.bind(i18n));
 
@@ -233,7 +215,8 @@ describe("getTeamTalkOptions", () => {
   });
 
   it("returns translated team talk options for pt-BR", async () => {
-    await i18n.changeLanguage("pt-BR");
+    await i18nReady;
+    await changeAppLanguage("pt-BR");
 
     const options = getTeamTalkOptions(i18n.t.bind(i18n));
 
@@ -252,7 +235,8 @@ describe("getTeamTalkOptions", () => {
   });
 
   it("returns translated team talk options for italian", async () => {
-    await i18n.changeLanguage("it");
+    await i18nReady;
+    await changeAppLanguage("it");
 
     const options = getTeamTalkOptions(i18n.t.bind(i18n));
 

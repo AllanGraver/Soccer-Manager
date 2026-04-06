@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { calcOvr, getContractRiskLevel } from "../../lib/helpers";
 import { PlayerData, GameStateData } from "../../store/gameStore";
 import { ArrowLeft } from "lucide-react";
@@ -25,7 +24,6 @@ import PlayerProfileRenewalModal from "./PlayerProfileRenewalModal";
 import PlayerProfileSeasonStatsCard from "./PlayerProfileSeasonStatsCard";
 import {
   type DelegatedRenewalCaseData,
-  type DelegatedRenewalResponseData,
   type NegotiationFeedbackData,
   getRenewalStatusClassName,
   getRenewalStatusMessage,
@@ -38,6 +36,17 @@ import {
   getScoutAvailability,
   type PlayerProfileScoutStatus,
 } from "./PlayerProfile.scouting";
+import {
+  getPlayerMatchHistory,
+  getPlayerStatsOverview,
+} from "../../services/playerProfileService";
+import {
+  delegateRenewals,
+  type NegotiationFeedbackData as RenewalServiceFeedbackData,
+  previewRenewalFinancialImpact,
+  proposeRenewal,
+} from "../../services/renewalService";
+import { sendScout } from "../../services/scoutingService";
 
 interface PlayerProfileProps {
   player: PlayerData;
@@ -54,6 +63,33 @@ function areAdvancedStatsEqual(
   right: PlayerAdvancedStatsSummary,
 ): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function normaliseRenewalFeedback(
+  feedback: RenewalServiceFeedbackData | null | undefined,
+): NegotiationFeedbackData | null {
+  if (!feedback) {
+    return null;
+  }
+
+  const mood =
+    feedback.mood === "calm" ||
+      feedback.mood === "firm" ||
+      feedback.mood === "tense" ||
+      feedback.mood === "positive" ||
+      feedback.mood === "guarded"
+      ? feedback.mood
+      : "guarded";
+
+  return {
+    detail_key: feedback.detail_key ?? null,
+    headline_key: feedback.headline_key ?? "common.unknown",
+    mood,
+    params: feedback.params,
+    patience: feedback.patience,
+    round: feedback.round,
+    tension: feedback.tension,
+  };
 }
 
 export default function PlayerProfile({
@@ -110,7 +146,7 @@ export default function PlayerProfile({
   const [hasConsumedInitialRenewalIntent, setHasConsumedInitialRenewalIntent] =
     useState(false);
   const ovr = calcOvr(player, primaryPosition);
-  const age = getPlayerAge(player.date_of_birth);
+  const age = getPlayerAge(player.date_of_birth, gameState.clock.current_date);
   const teamName = getPlayerTeamName(
     gameState.teams,
     player.team_id,
@@ -225,12 +261,9 @@ export default function PlayerProfile({
 
     const loadProjection = async (): Promise<void> => {
       try {
-        const result = await invoke<RenewalProjectionData>(
-          "preview_renewal_financial_impact",
-          {
-            playerId: player.id,
-            weeklyWage: renewalOfferedWage,
-          },
+        const result = await previewRenewalFinancialImpact(
+          player.id,
+          renewalOfferedWage,
         );
 
         if (!cancelled) {
@@ -257,12 +290,7 @@ export default function PlayerProfile({
 
     const loadAdvancedStats = async (): Promise<void> => {
       try {
-        const result = await invoke<PlayerAdvancedStatsSummary>(
-          "get_player_stats_overview",
-          {
-            playerId: player.id,
-          },
-        );
+        const result = await getPlayerStatsOverview(player.id);
 
         if (!cancelled && !areAdvancedStatsEqual(result, fallbackAdvancedStats)) {
           setAdvancedStatsOverride(result);
@@ -301,13 +329,7 @@ export default function PlayerProfile({
 
     const loadRecentMatches = async (): Promise<void> => {
       try {
-        const result = await invoke<PlayerRecentMatchEntry[]>(
-          "get_player_match_history",
-          {
-            playerId: player.id,
-            limit: 5,
-          },
-        );
+        const result = await getPlayerMatchHistory(player.id, 5);
 
         if (!cancelled) {
           setRecentMatches((current) => {
@@ -350,11 +372,11 @@ export default function PlayerProfile({
     setRenewalCooledOff(false);
 
     try {
-      const result = await invoke<RenewalResponseData>("propose_renewal", {
-        playerId: player.id,
-        weeklyWage: renewalOfferedWage,
-        contractYears: renewalOfferedYears,
-      });
+      const result = await proposeRenewal(
+        player.id,
+        renewalOfferedWage,
+        renewalOfferedYears,
+      );
 
       onGameUpdate?.(result.game);
       setRenewalStatus(result.outcome);
@@ -363,7 +385,7 @@ export default function PlayerProfile({
       setRenewalSessionStatus(result.session_status);
       setRenewalIsTerminal(result.is_terminal);
       setRenewalCooledOff(result.cooled_off ?? false);
-      setRenewalFeedback(result.feedback ?? null);
+      setRenewalFeedback(normaliseRenewalFeedback(result.feedback));
 
       if (result.session_status === "blocked") {
         setRenewalStatus("blocked");
@@ -397,14 +419,11 @@ export default function PlayerProfile({
     setRenewalCooledOff(false);
 
     try {
-      const result = await invoke<DelegatedRenewalResponseData>(
-        "delegate_renewals",
-        {
-          playerIds: [player.id],
-          maxWageIncreasePct: 35,
-          maxContractYears: 3,
-        },
-      );
+      const result = await delegateRenewals({
+        playerIds: [player.id],
+        maxWageIncreasePct: 35,
+        maxContractYears: 3,
+      });
 
       onGameUpdate?.(result.game);
       const delegatedCase: DelegatedRenewalCaseData | undefined =
@@ -503,10 +522,7 @@ export default function PlayerProfile({
             setScoutError(null);
 
             try {
-              const updated = await invoke<GameStateData>("send_scout", {
-                scoutId: availableScout.id,
-                playerId: player.id,
-              });
+              const updated = await sendScout(availableScout.id, player.id);
               onGameUpdate(updated);
               setScoutStatus("sent");
             } catch (err) {
