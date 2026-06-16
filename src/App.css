@@ -21,17 +21,17 @@
   --font-sans: "Inter", "Avenir", "Helvetica", "Arial", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
   --font-heading: "Barlow Condensed", "Inter", "Arial Narrow", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
 
-  /* Primary: Emerald Green */
-  --color-primary-50: #ecfdf5;
-  --color-primary-100: #d1fae5;
-  --color-primary-200: #a7f3d0;
-  --color-primary-300: #6ee7b7;
-  --color-primary-400: #34d399;
-  --color-primary-500: #10b981;
-  --color-primary-600: #059669;
-  --color-primary-700: #047857;
-  --color-primary-800: #065f46;
-  --color-primary-900: #064e3b;
+  /* Primary: Burgundy/Maroon */
+  --color-primary-50: #faf5f5;
+  --color-primary-100: #f5e5e5;
+  --color-primary-200: #e8c8c8;
+  --color-primary-300: #d4a0a0;
+  --color-primary-400: #bb5555;
+  --color-primary-500: #a03030;
+  --color-primary-600: #8B0000;
+  --color-primary-700: #700000;
+  --color-primary-800: #5a0000;
+  --color-primary-900: #4a0000;
 
   /* Accent: Gold */
   --color-accent-50: #fffbeb;
@@ -40,7 +40,7 @@
   --color-accent-300: #fcd34d;
   --color-accent-400: #ffd60a;
   --color-accent-500: #eab308;
-  --color-accent-600: #b8960a;
+  --color-accent-600: #b8860b;
   --color-accent-700: #a16207;
   --color-accent-800: #854d0e;
   --color-accent-900: #713f12;
@@ -50,16 +50,17 @@
   --color-success-500: #05a87d;
   --color-success-600: #059669;
 
-  /* Navy (dark mode backgrounds) */
-  --color-navy-900: #0a1128;
-  --color-navy-800: #131b33;
-  --color-navy-700: #1a2340;
-  --color-navy-600: #243054;
+  /* Dark Backgrounds */
+  --color-dark-900: #1a1a1a;
+  --color-dark-800: #2d2d2d;
+  --color-dark-700: #3a3a3a;
+  --color-dark-600: #4a4a4a;
+  --color-dark-500: #5a5a5a;
 }
 
 @layer base {
   body {
-    @apply bg-gray-100 text-navy-900 antialiased dark:bg-navy-900 dark:text-gray-100 transition-colors duration-300;
+    @apply bg-gray-50 text-gray-900 antialiased dark:bg-dark-900 dark:text-gray-100 transition-colors duration-300;
   }
 
   h1,
@@ -90,8 +91,114 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: var(--color-navy-600);
+    background-color: var(--color-dark-600);
     border-radius: 9999px;
+  }
+
+  /* FM-style split pane layouts */
+  .fm-split-container {
+    @apply flex h-screen gap-4 bg-dark-900 p-3;
+  }
+
+  .fm-left-panel {
+    @apply w-1/4 bg-dark-800 rounded-lg overflow-y-auto scrollbar-thin;
+  }
+
+  .fm-right-panel {
+    @apply flex-1 bg-dark-800 rounded-lg overflow-y-auto scrollbar-thin;
+  }
+
+  .fm-card {
+    @apply bg-dark-700 rounded-lg p-4 border border-dark-600 transition-all hover:border-primary-500 hover:shadow-lg hover:shadow-primary-900/20;
+  }
+
+  .fm-stat-row {
+    @apply flex justify-between items-center py-2 text-sm border-b border-dark-600 last:border-0;
+  }
+
+  .fm-stat-label {
+    @apply text-gray-400 uppercase text-xs tracking-wider font-heading;
+  }
+
+  .fm-stat-value {
+    @apply text-gray-100 font-semibold;
+  }
+
+  /* Burgundy accent bar */
+  .fm-accent-bar {
+    @apply h-1 bg-gradient-to-r from-primary-600 via-accent-500 to-primary-600 rounded-full;
+  }
+
+  /* Tab navigation (FM style) */
+  .fm-tabs {
+    @apply flex gap-0 border-b border-dark-600;
+  }
+
+  .fm-tab {
+    @apply px-4 py-3 text-sm font-heading uppercase tracking-wider text-gray-400 border-b-2 border-transparent hover:text-gray-200 hover:border-primary-500 transition-all;
+  }
+
+  .fm-tab.active {
+    @apply text-accent-400 border-accent-500;
+  }
+
+  /* Club profile header */
+  .fm-club-header {
+    @apply relative mb-6 pb-6 border-b border-dark-600;
+  }
+
+  .fm-club-badge {
+    @apply w-24 h-24 mx-auto mb-4 object-contain filter drop-shadow-lg;
+  }
+
+  .fm-club-name {
+    @apply text-center text-xl font-heading font-bold uppercase text-gray-100 mb-2;
+  }
+
+  .fm-club-meta {
+    @apply text-center text-xs text-gray-500 uppercase tracking-widest;
+  }
+
+  /* Player/Staff card compact */
+  .fm-person-card {
+    @apply flex gap-3 items-center p-3 bg-dark-600 rounded mb-2 hover:bg-dark-500 cursor-pointer transition-colors;
+  }
+
+  .fm-person-avatar {
+    @apply w-12 h-12 rounded-full object-cover flex-shrink-0 border border-primary-600;
+  }
+
+  .fm-person-info {
+    @apply flex-1 min-w-0;
+  }
+
+  .fm-person-name {
+    @apply text-sm font-semibold text-gray-100 truncate;
+  }
+
+  .fm-person-role {
+    @apply text-xs text-gray-400 uppercase tracking-wider;
+  }
+
+  /* Info grid (FM dashboard style) */
+  .fm-info-grid {
+    @apply grid grid-cols-2 gap-3 mb-6;
+  }
+
+  .fm-info-box {
+    @apply bg-dark-700 p-4 rounded-lg border border-dark-600;
+  }
+
+  .fm-info-title {
+    @apply text-xs font-heading uppercase tracking-wider text-gray-400 mb-2;
+  }
+
+  .fm-info-value {
+    @apply text-lg font-bold text-gray-100;
+  }
+
+  .fm-info-subtext {
+    @apply text-xs text-gray-500 mt-1;
   }
 }
 
@@ -101,11 +208,11 @@
 }
 
 .dark select option {
-  background-color: var(--color-navy-700);
+  background-color: var(--color-dark-700);
   color: #e2e8f0;
 }
 
-/* Dark mode readability: boost low-contrast gray text on navy backgrounds */
+/* Dark mode readability: boost low-contrast gray text on dark backgrounds */
 .dark .text-gray-500 {
   color: #8d99ae;
 }
