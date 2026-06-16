@@ -11,8 +11,11 @@ import type {
   CareerStartPhase,
   CreateManagerFormData,
 } from "../components/menu/CreateManagerForm";
+import type {
+  CompetitionDefinitionIssue,
+  WorldDatabaseInfo,
+} from "../components/menu/WorldSelect";
 import type { ManagerProfile } from "../components/menu/types";
-import type { WorldDatabaseInfo } from "../components/menu/WorldSelect";
 import { resolveBackendError } from "../utils/backendI18n";
 import {
   FolderOpen,
@@ -319,6 +322,11 @@ export default function MainMenu() {
   // World database state
   const [worldDatabases, setWorldDatabases] = useState<WorldDatabaseInfo[]>([]);
   const [selectedWorldId, setSelectedWorldId] = useState<string>("random");
+  const [competitionDefsJson, setCompetitionDefsJson] = useState<string | null>(null);
+  const [competitionDefsFileName, setCompetitionDefsFileName] = useState<string | null>(null);
+  const [competitionDefsErrors, setCompetitionDefsErrors] = useState<
+    CompetitionDefinitionIssue[]
+  >([]);
   const [isLoadingWorlds, setIsLoadingWorlds] = useState(false);
   const [historyDepthYears, setHistoryDepthYears] = useState(
     initialHistoryDepthYears,
@@ -533,6 +541,68 @@ export default function MainMenu() {
     e.target.value = "";
   };
 
+  // Resolve the chosen world into a backend world source (writing imported
+  // worlds to a temp path), shared by validation and game start.
+  const resolveWorldSource = async (): Promise<string | undefined> => {
+    if (selectedWorldId === "random") {
+      return undefined;
+    }
+    if (
+      selectedWorldId.startsWith("file:") &&
+      sessionStorage.getItem("imported_world_json")
+    ) {
+      const json = sessionStorage.getItem("imported_world_json")!;
+      const path = await invoke<string>("write_temp_database", { json });
+      return `file:${path}`;
+    }
+    const selectedDb = worldDatabases.find((db) => db.id === selectedWorldId);
+    if (selectedDb?.path) {
+      return `file:${selectedDb.path}`;
+    }
+    return selectedWorldId;
+  };
+
+  const handleImportCompetitionDefs = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const json = reader.result as string;
+      setCompetitionDefsJson(json);
+      setCompetitionDefsFileName(file.name);
+      setCompetitionDefsErrors([]);
+      try {
+        const worldSource = await resolveWorldSource();
+        const issues = await invoke<CompetitionDefinitionIssue[]>(
+          "validate_competition_definitions",
+          { worldSource, definitionsJson: json },
+        );
+        setCompetitionDefsErrors(issues);
+      } catch (err) {
+        setCompetitionDefsErrors([
+          {
+            code:
+              typeof err === "string"
+                ? err
+                : "be.error.competitionDef.parseFailed",
+            competition_id: "",
+            params: {},
+          },
+        ]);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleClearCompetitionDefs = () => {
+    setCompetitionDefsJson(null);
+    setCompetitionDefsFileName(null);
+    setCompetitionDefsErrors([]);
+  };
+
   const handleStartGame = async () => {
     const startupOptions = buildStartupOptions(formData, historyDepthYears);
     if (!startupOptions) {
@@ -546,16 +616,7 @@ export default function MainMenu() {
 
     setIsStarting(true);
     try {
-      // Determine world source
-      let worldSource: string | undefined = selectedWorldId;
-      if (selectedWorldId === "random") {
-        worldSource = undefined;
-      } else {
-        const selectedDb = worldDatabases.find((db) => db.id === selectedWorldId);
-        if (selectedDb?.path) {
-          worldSource = `file:${selectedDb.path}`;
-        }
-      }
+      const worldSource = await resolveWorldSource();
 
       const game = await invoke<GameStateData>("start_new_game", {
         firstName: formData.firstName,
@@ -564,6 +625,7 @@ export default function MainMenu() {
         nationality: formData.nationality,
         startupOptions,
         worldSource,
+        competitionDefinitionsJson: competitionDefsJson ?? undefined,
       });
       setGameState(game);
       navigate("/select-team");
@@ -601,6 +663,7 @@ export default function MainMenu() {
     } catch (error) {
       console.error("Failed to load game:", error);
       setLoadingSaveId(null);
+      alert(t("menu.loadGameFailed", { error: resolveBackendError(error) }));
     }
   };
 
@@ -849,6 +912,10 @@ export default function MainMenu() {
                 onStart={handleStartGame}
                 onBack={() => setMenuState("create")}
                 onClose={() => setMenuState("main")}
+                competitionDefsFileName={competitionDefsFileName}
+                competitionDefsErrors={competitionDefsErrors}
+                onImportCompetitionDefs={handleImportCompetitionDefs}
+                onClearCompetitionDefs={handleClearCompetitionDefs}
               />
             </Suspense>
           )}

@@ -18,6 +18,7 @@
     "deleteSave": "Eliminar jogo",
     "noResults": "Sem resultados",
     "importedDescription": "Base de dados de mundo importada",
+    "loadGameFailed": "Não foi possível carregar a gravação: {{error}}",
     "invalidWorldDb": "Ficheiro de base de dados de mundo inválido: {{error}}",
     "failedStartGame": "Falha ao iniciar o jogo: {{error}}",
     "openDiscord": "Abrir comunidade Discord",
@@ -62,12 +63,15 @@
     "title": "Escolher Mundo",
     "scanning": "A procurar bases de dados...",
     "importFile": "Importar ficheiro",
+    "importCompetitions": "Adicionar ficheiro de competições",
+    "removeCompetitions": "Remover",
+    "competitionsErrorsTitle": "Este ficheiro de competições não pode ser usado:",
     "startCareer": "Iniciar Carreira",
     "creatingWorld": "A criar mundo...",
     "teams": "{{count}} equipas",
     "players": "{{count}} jogadores",
     "randomWorld": "Mundo Aleatório",
-    "randomDescription": "Liga gerada aleatoriamente com equipas, jogadores e staff",
+    "randomDescription": "Um mundo gerado proceduralmente com clubes, jogadores e staff",
     "historyMode": {
       "generated": "Histórico gerado",
       "reference": "Histórico de referência",
@@ -117,6 +121,7 @@
     "exitToMenu": "Sair para o Menu",
     "continue": "Continuar",
     "simulating": "A simular...",
+    "simulatingMessage": "A processar o mundo — demora apenas um momento.",
     "loading": "A carregar estado do jogo...",
     "noResults": "Nenhum resultado encontrado.",
     "searchPlaceholder": "Procurar jogadores, equipas...",
@@ -266,7 +271,55 @@
     "repStrong": "Forte",
     "repAverage": "Médio",
     "repDeveloping": "Em Desenvolvimento",
-    "failedToSelectTeam": "Falha ao selecionar a equipa: {{error}}"
+    "failedToSelectTeam": "Falha ao selecionar a equipa: {{error}}",
+    "homeRegion": "Região de origem",
+    "homeCountry": "País de origem",
+    "simulatedRegions": "Regiões simuladas",
+    "simulatedCompetitions": "Competições simuladas",
+    "homeBadge": "Origem",
+    "yourClub": "o teu clube",
+    "yourClubBadge": "Teu clube",
+    "requiresRegions": "Requer {{regions}}",
+    "selectedClub": "Clube selecionado",
+    "formation": "Formação",
+    "overall": "Overall",
+    "likelyXi": "Provável XI",
+    "competitions": "Competições",
+    "keyPlayers": "Jogadores-chave",
+    "activeCompetitions": "Competições ativas",
+    "clubCompetitionsAlwaysSimulated": "As competições do teu clube são sempre simuladas, mesmo que desatives outras regiões ou torneios.",
+    "selectClubPrompt": "Seleciona um clube para veres o plantel e as competições.",
+    "playersCount": "{{count}} jogadores",
+    "scopeSummary": "{{regionsCount}} regiões simuladas e {{competitionsCount}} competições simuladas serão carregadas.",
+    "regionLabels": {
+      "north-america": "América do Norte",
+      "central-america": "América Central",
+      "south-america": "América do Sul",
+      "europe": "Europa",
+      "asia": "Ásia",
+      "oceania": "Oceania"
+    },
+    "scopes": {
+      "Domestic": "Doméstica",
+      "Regional": "Regional",
+      "Continental": "Continental",
+      "International": "Internacional"
+    },
+    "kinds": {
+      "League": "Liga",
+      "Cup": "Taça",
+      "ContinentalClub": "Competição continental de clubes",
+      "InternationalClub": "Competição internacional de clubes",
+      "InternationalNation": "Competição internacional de seleções",
+      "FriendlyCup": "Taça amigável"
+    },
+    "scopeMessages": {
+      "homeRegionAlwaysActive": "A tua região jogável mantém-se sempre ativa.",
+      "regionRequiredByCompetition": "{{competition}} faz parte do calendário de {{club}}, por isso {{region}} tem de se manter ativa.",
+      "regionRemovedDisablesCompetitions": "{{region}} foi removida do escopo de simulação, por isso as competições dependentes também foram desativadas.",
+      "clubCompetitionLocked": "{{competition}} está no calendário de {{club}} e será sempre simulada.",
+      "autoEnabledRegions": "{{competition}} precisa de {{regions}}, por isso essas regiões foram ativadas automaticamente."
+    }
   },
   "youthAcademy": {
     "title": "Academia de Jovens",
@@ -906,6 +959,8 @@
     "subtitle": "Lendas retiradas e campeões históricos",
     "legends": "Lendas retiradas",
     "pastChampions": "Campeões históricos",
+    "worldCupChampions": "Campeões do mundo",
+    "worldCupEdition": "Mundial de {{year}}",
     "noLegends": "Ainda não há lendas retiradas registadas.",
     "noChampions": "Ainda não há campeões históricos registados.",
     "appearances": "Jogos",
@@ -1019,10 +1074,16 @@
   "schedule": {
     "noSchedule": "Nenhum calendário de liga disponível.",
     "noLeague": "Nenhum calendário de liga disponível.",
+    "standingsUnavailable": "A classificação não está disponível para esta competição.",
     "fixtures": "Jogos",
     "standings": "Classificação",
     "matchday": "Jornada {{number}}",
-    "season": "Temporada {{number}}"
+    "season": "Temporada {{number}}",
+    "international": "Internacional",
+    "internationalDuty": "Ao serviço da seleção",
+    "promotionZone": "Subida",
+    "loadMore": "Carregar mais",
+    "relegationZone": "Despromoção"
   },
   "players": {
     "searchPlaceholder": "Procurar por nome ou nacionalidade...",
@@ -1064,6 +1125,17 @@
     "topScorers": "Melhores Marcadores",
     "loadingAwards": "A carregar prémios...",
     "awardsTab": "Prémios",
+    "bracket": "Quadro",
+    "group": "Grupo {{name}}",
+    "bye": "Isento",
+    "roundComplete": "Concluída",
+    "roundInProgress": "Em curso",
+    "rounds": {
+      "final": "Final",
+      "semifinal": "Meia-final",
+      "quarterfinal": "Quartos de final",
+      "roundOf": "Ronda de {{size}}"
+    },
     "awards": {
       "goldenBootTitle": "Bota de Ouro",
       "goldenBootSubtitle": "Melhores marcadores",
@@ -2028,10 +2100,42 @@
         "playerNotInStartingXi": "O jogador não está no onze inicial"
       },
       "worldReadFileFailed": "Falha ao ler o ficheiro da base de dados do mundo.",
+    "competitionDef": {
+      "invalidEmbedded": "As definições de competições deste mundo são inválidas e não foi possível carregá-las.",
+      "invalidStandalone": "O ficheiro de definição de competições selecionado é inválido.",
+      "parseFailed": "Não foi possível ler o ficheiro de definição de competições como JSON.",
+      "unsupportedVersion": "Versão de formato {{version}} não suportada; esta versão suporta até {{supported}}.",
+      "emptyId": "Falta o id a uma competição.",
+      "duplicateId": "Id de competição duplicado \"{{id}}\".",
+      "emptyName": "Falta o nome a uma competição.",
+      "unknownRegion": "Região desconhecida \"{{region}}\".",
+      "unknownCountry": "País desconhecido \"{{country}}\".",
+      "groupConfigOnNonGroupFormat": "As definições de grupo só se aplicam a um formato de grupos e eliminatórias.",
+      "groupSizeTooSmall": "O tamanho do grupo {{groupSize}} é demasiado pequeno (mínimo 2).",
+      "zeroLegs": "Uma competição precisa de pelo menos uma mão.",
+      "noParticipants": "Sem participantes: forneça uma lista explícita ou um seletor.",
+      "bothParticipantSources": "Forneça uma lista explícita ou um seletor, não ambos.",
+      "tooFewParticipants": "São necessários pelo menos dois participantes.",
+      "unknownTeam": "Equipa desconhecida \"{{team}}\".",
+      "selectorMissingCountry": "Este seletor precisa de um país.",
+      "selectorCountTooSmall": "Este seletor precisa de uma contagem de pelo menos 2.",
+      "selectorMissingRegion": "Este seletor precisa de uma região.",
+      "unknownSourceCompetition": "Competição de origem desconhecida \"{{source}}\".",
+      "selectorMissingSource": "Este seletor precisa de uma competição de origem.",
+      "unknownExcludedCompetition": "Competição excluída desconhecida \"{{excluded}}\".",
+      "selectorCycle": "Qualificação circular entre competições."
+    },
       "worldParseFailed": "Falha ao interpretar o ficheiro da base de dados do mundo.",
       "worldWriteFileFailed": "Falha ao exportar o ficheiro da base de dados do mundo.",
       "worldWriteDatabaseFailed": "Falha ao guardar a base de dados do mundo importada.",
       "worldSerializeFailed": "Falha ao exportar os dados da base de dados do mundo.",
+      "saveLoad": {
+        "corrupted": "Este ficheiro de gravação está corrompido e não pode ser carregado.",
+        "incompatibleVersion": "Esta gravação foi criada por uma versão mais recente do jogo (gravação v{{saveVersion}}; esta versão suporta até à v{{supported}}). Atualize o jogo para a carregar.",
+        "missingData": "Faltam dados necessários a esta gravação e não pode ser carregada.",
+        "invalidWorld": "Os dados de mundo ou de mod desta gravação são inválidos e não podem ser carregados.",
+        "unknown": "Não foi possível carregar esta gravação devido a um erro inesperado."
+      },
       "gameDatabase": {
         "openFailed": "Falha ao abrir os dados da gravação.",
         "migrationFailed": "Falha ao preparar os dados da gravação.",
@@ -2264,6 +2368,18 @@
           "midTable": "{{team}} terminou a época em {{position}}º lugar com {{points}} pontos.\n\nUm resultado intermédio. A direção espera melhorias na próxima época. Precisamos de ser mais competitivos.",
           "lowerHalf": "Uma época dececionante para {{team}}. Terminar em {{position}}º lugar com apenas {{points}} pontos fica aquém das expectativas.\n\nA direção está preocupada. Serão necessárias melhorias significativas na próxima época, caso contrário a tua posição poderá ser reavaliada."
         }
+      },
+      "promotion": {
+        "subject": "Subida à {{division}}!",
+        "body": "Parabéns! O clube garantiu a subida e vai disputar a {{division}} na temporada {{season}}.\n\nA direção está entusiasmada com esta conquista. Vamos preparar-nos para o novo patamar."
+      },
+      "relegation": {
+        "subject": "Despromoção para a {{division}}",
+        "body": "O clube foi despromovido e vai disputar a {{division}} na temporada {{season}}.\n\nA direção está profundamente desiludida. Espera-se uma luta imediata pela subida."
+      },
+      "worldCupChampion": {
+        "subject": "{{nation}} vence o Mundial de {{year}}!",
+        "body": "{{nation}} sagrou-se campeã do mundo no Mundial de {{year}}.\n\nUma geração de jogadores será recordada por este triunfo."
       },
       "newSeasonSchedule": {
         "subject": "Época {{season}} — Nova Tabela Divulgada",
@@ -2735,6 +2851,18 @@
         "headline": "Resumo de Transferências — Semana de {{weekStart}}",
         "body": "O mercado de transferências manteve-se agitado esta semana. {{transferCount}} transferência(s) concluída(s) destacaram-se por toda a divisão.\n\n{{deals}}",
         "dealLine": "  {{player}}: de {{fromTeam}} para {{toTeam}} ({{fee}})"
+      },
+      "worldCupQualifying": {
+        "headline": "Começa o caminho para o Mundial de {{year}}",
+        "body": "{{nations}} seleções iniciam a qualificação para o Mundial de {{year}}, disputada nas janelas internacionais desta época."
+      },
+      "worldCupKickoff": {
+        "headline": "Começa o Mundial de {{year}}",
+        "body": "{{nations}} seleções juntaram-se para o Mundial de {{year}}. Neste verão nada mais conta enquanto os melhores do mundo perseguem o maior troféu do futebol."
+      },
+      "worldCupChampion": {
+        "headline": "{{nation}} é campeã do mundo",
+        "body": "{{nation}} venceu o Mundial de {{year}} e entrou para a história do futebol. Toda uma nação celebra um triunfo que será recordado por gerações."
       },
       "seasonAwards": {
         "headline": "Prémios da época {{season}}",

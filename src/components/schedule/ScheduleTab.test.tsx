@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { FixtureData, GameStateData, TeamData } from "../../store/gameStore";
@@ -29,6 +29,11 @@ vi.mock("react-i18next", () => ({
       if (key === "common.pts") return "Pts";
       if (key === "schedule.season") return `Season ${params?.number}`;
       if (key === "schedule.matchday") return `Matchday ${params?.number}`;
+      if (key === "schedule.international") return "International";
+      if (key === "schedule.internationalDuty") return "On International Duty";
+      if (key === "schedule.promotionZone") return "Promotion";
+      if (key === "schedule.relegationZone") return "Relegation";
+      if (key === "schedule.loadMore") return "Load more";
       return key;
     },
     i18n: {
@@ -182,5 +187,214 @@ describe("ScheduleTab", () => {
     fireEvent.click(screen.getByRole("button", { name: "View team: Beta FC" }));
 
     expect(onSelectTeam).toHaveBeenCalledWith("team-2");
+  });
+
+  it("marks promotion and relegation zones on pyramid standings", () => {
+    const state = createGameState(true);
+    const standing = (teamId: string, points: number) => ({
+      team_id: teamId,
+      played: 3,
+      won: points / 3,
+      drawn: 0,
+      lost: 3 - points / 3,
+      goals_for: points,
+      goals_against: 3,
+      points,
+    });
+    state.competitions = [
+      {
+        id: "eng-1",
+        name: "First Division",
+        season: 1,
+        country_id: "ENG",
+        priority: 0,
+        participant_ids: ["team-1", "team-2", "team-3", "team-4"],
+        fixtures: [],
+        standings: [
+          standing("team-1", 9),
+          standing("team-2", 6),
+          standing("team-3", 3),
+          standing("team-4", 0),
+        ],
+      },
+      {
+        id: "eng-2",
+        name: "Second Division",
+        season: 1,
+        country_id: "ENG",
+        priority: 1,
+        participant_ids: ["team-5", "team-6", "team-7", "team-8"],
+        fixtures: [],
+        standings: [],
+      },
+    ];
+
+    render(<ScheduleTab gameState={state} onSelectTeam={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Standings/i }));
+
+    // Bottom club of the top division sits in the relegation zone.
+    expect(screen.getByTestId("standings-relegation-team-4")).toBeInTheDocument();
+    expect(screen.queryByTestId("standings-relegation-team-3")).not.toBeInTheDocument();
+    // Top division has nothing to be promoted to.
+    expect(screen.queryByTestId("standings-promotion-team-1")).not.toBeInTheDocument();
+    expect(screen.getByText("Relegation")).toBeInTheDocument();
+  });
+
+  it("fixtures view shows only the selected competition, not every competition", () => {
+    const state = createGameState(true);
+    state.league = null;
+    state.teams = [
+      createTeam(),
+      createTeam({ id: "team-2", name: "Beta FC", short_name: "BET" }),
+      createTeam({ id: "team-3", name: "Gamma FC", short_name: "GAM" }),
+      createTeam({ id: "team-4", name: "Delta FC", short_name: "DEL" }),
+    ];
+    const standing = (teamId: string) => ({
+      team_id: teamId,
+      played: 1,
+      won: 0,
+      drawn: 1,
+      lost: 0,
+      goals_for: 1,
+      goals_against: 1,
+      points: 1,
+    });
+    state.competitions = [
+      {
+        id: "eng-1",
+        name: "England First Division",
+        season: 1,
+        country_id: "ENG",
+        priority: 0,
+        participant_ids: ["team-1", "team-2"],
+        fixtures: [
+          createFixture({
+            id: "fixA",
+            competition_id: "eng-1",
+            home_team_id: "team-1",
+            away_team_id: "team-2",
+          }),
+        ],
+        standings: [standing("team-1"), standing("team-2")],
+      },
+      {
+        id: "bra-1",
+        name: "Brazil First Division",
+        season: 1,
+        country_id: "BRA",
+        priority: 0,
+        participant_ids: ["team-3", "team-4"],
+        fixtures: [
+          createFixture({
+            id: "fixB",
+            competition_id: "bra-1",
+            home_team_id: "team-3",
+            away_team_id: "team-4",
+          }),
+        ],
+        standings: [standing("team-3"), standing("team-4")],
+      },
+    ];
+    state.active_competition_ids = ["eng-1", "bra-1"];
+
+    render(<ScheduleTab gameState={state} onSelectTeam={vi.fn()} />);
+
+    // Defaults to the user's competition only.
+    expect(screen.getByTestId("schedule-fixture-fixA")).toBeInTheDocument();
+    expect(screen.queryByTestId("schedule-fixture-fixB")).not.toBeInTheDocument();
+
+    // Selecting another competition swaps the fixtures shown.
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "bra-1" } });
+    expect(screen.getByTestId("schedule-fixture-fixB")).toBeInTheDocument();
+    expect(screen.queryByTestId("schedule-fixture-fixA")).not.toBeInTheDocument();
+  });
+
+  it("lazily renders matchdays and reveals more on demand", () => {
+    const state = createGameState(true);
+    const fixtures: FixtureData[] = Array.from({ length: 10 }, (_, index) => {
+      const matchday = index + 1;
+      return createFixture({
+        id: `md${matchday}`,
+        competition_id: "league-1",
+        matchday,
+        date: `2026-08-${String(matchday).padStart(2, "0")}`,
+        status: "Scheduled",
+        result: null,
+      });
+    });
+    state.league = { ...state.league!, fixtures };
+
+    render(<ScheduleTab gameState={state} onSelectTeam={vi.fn()} />);
+
+    // Only the first page of matchdays renders up front.
+    expect(screen.getByTestId("schedule-fixture-md1")).toBeInTheDocument();
+    expect(screen.getByTestId("schedule-fixture-md6")).toBeInTheDocument();
+    expect(screen.queryByTestId("schedule-fixture-md7")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Load more/i }));
+
+    // The rest appear after loading more, and the button goes away.
+    expect(screen.getByTestId("schedule-fixture-md7")).toBeInTheDocument();
+    expect(screen.getByTestId("schedule-fixture-md10")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Load more/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides the international toggle when there are no national-team fixtures", () => {
+    render(<ScheduleTab gameState={createGameState(true)} onSelectTeam={vi.fn()} />);
+
+    expect(
+      screen.queryByRole("button", { name: /International/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows national-team fixtures and call-ups in the international view", () => {
+    const state = createGameState(true);
+    state.players = [
+      { id: "p1", match_name: "Called Up", team_id: "team-1" } as GameStateData["players"][number],
+    ];
+    state.national_teams = [
+      {
+        id: "nt-eng",
+        name: "England",
+        football_nation: "ENG",
+        squad_player_ids: [],
+        reputation: 500,
+        fixtures: [
+          {
+            id: "ntf-1",
+            competition_id: "international-friendlies",
+            matchday: 1,
+            date: "2026-09-09",
+            home_team_id: "nt-eng",
+            away_team_id: "nt-bra",
+            competition: "InternationalNation",
+            status: "Completed",
+            result: { home_goals: 2, away_goals: 1, home_scorers: [], away_scorers: [] },
+          },
+        ],
+      },
+      {
+        id: "nt-bra",
+        name: "Brazil",
+        football_nation: "BRA",
+        squad_player_ids: ["p1"],
+        reputation: 500,
+        fixtures: [],
+      },
+    ];
+
+    render(<ScheduleTab gameState={state} onSelectTeam={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /International/i }));
+
+    const fixtureRow = screen.getByTestId("schedule-international-ntf-1");
+    expect(within(fixtureRow).getByText("England")).toBeInTheDocument();
+    expect(within(fixtureRow).getByText("Brazil")).toBeInTheDocument();
+    // p1 plays for Brazil (an away nation) so they are on international duty.
+    const callup = screen.getByTestId("schedule-callup-p1");
+    expect(within(callup).getByText("Called Up")).toBeInTheDocument();
+    expect(within(callup).getByText("Brazil")).toBeInTheDocument();
   });
 });

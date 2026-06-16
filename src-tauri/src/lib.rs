@@ -184,6 +184,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             list_world_databases,
             start_new_game,
+            validate_competition_definitions,
+            validate_world_package,
             export_world_database,
             write_temp_database,
             select_team,

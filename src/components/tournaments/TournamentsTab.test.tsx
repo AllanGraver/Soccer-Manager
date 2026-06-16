@@ -39,6 +39,17 @@ vi.mock("react-i18next", () => ({
       if (key === "common.gd") return "GD";
       if (key === "common.pts") return "Pts";
       if (key === "common.position") return "Position";
+      if (key === "tournaments.bracket") return "Bracket";
+      if (key === "tournaments.group") return `Group ${params?.name}`;
+      if (key === "tournaments.bye") return "Bye";
+      if (key === "tournaments.roundComplete") return "Complete";
+      if (key === "tournaments.roundInProgress") return "In progress";
+      if (key === "tournaments.rounds.final") return "Final";
+      if (key === "tournaments.rounds.semifinal") return "Semifinal";
+      if (key === "tournaments.rounds.quarterfinal") return "Quarterfinal";
+      if (key === "tournaments.rounds.roundOf") return `Round of ${params?.size}`;
+      if (key === "schedule.promotionZone") return "Promotion";
+      if (key === "schedule.relegationZone") return "Relegation";
       if (key.startsWith("season.phases.")) return key.replace("season.phases.", "");
       return key;
     },
@@ -274,6 +285,236 @@ describe("TournamentsTab", () => {
     fireEvent.click(screen.getByRole("button", { name: "View profile" }));
 
     expect(onSelectPlayer).toHaveBeenCalledWith("player-1");
+  });
+
+  it("renders a knockout bracket with byes when a cup is selected", () => {
+    const state = createGameState(true);
+    state.competitions = [
+      state.league!,
+      {
+        id: "cup-1",
+        name: "FA Cup",
+        season: 1,
+        rules: { format: "Knockout", counts_in_season_flow: true },
+        participant_ids: ["team-1", "team-2", "team-3"],
+        fixtures: [
+          createFixture({
+            id: "cup-f1",
+            competition: "Cup",
+            status: "Scheduled",
+            result: null,
+          }),
+        ],
+        standings: [],
+        knockout_rounds: [
+          {
+            id: "round-1",
+            name: "Semifinal",
+            fixture_ids: ["cup-f1"],
+            bye_team_ids: ["team-2"],
+            completed: false,
+          },
+        ],
+      },
+    ];
+
+    render(<TournamentsTab gameState={state} onSelectTeam={vi.fn()} />);
+
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "cup-1" } });
+    fireEvent.click(screen.getByRole("button", { name: /Bracket/i }));
+
+    expect(screen.getByTestId("tournaments-bracket-cup-f1")).toBeInTheDocument();
+    const byes = screen.getByTestId("tournaments-byes-round-1");
+    expect(byes).toHaveTextContent("Beta FC");
+    // The header reflects entrants, not the (empty) cup standings.
+    expect(screen.getByText(/3 teams/)).toBeInTheDocument();
+  });
+
+  it("renders group tables for a group-and-knockout competition", () => {
+    const state = createGameState(true);
+    state.competitions = [
+      state.league!,
+      {
+        id: "cl-1",
+        name: "Continental Champions Cup",
+        season: 1,
+        rules: { format: "GroupAndKnockout", counts_in_season_flow: true },
+        participant_ids: ["team-1", "team-2"],
+        fixtures: [],
+        standings: [],
+        groups: [
+          {
+            id: "cl-1-group-A",
+            name: "A",
+            team_ids: ["team-1", "team-2"],
+            standings: [
+              {
+                team_id: "team-1",
+                played: 1,
+                won: 1,
+                drawn: 0,
+                lost: 0,
+                goals_for: 2,
+                goals_against: 0,
+                points: 3,
+              },
+              {
+                team_id: "team-2",
+                played: 1,
+                won: 0,
+                drawn: 0,
+                lost: 1,
+                goals_for: 0,
+                goals_against: 2,
+                points: 0,
+              },
+            ],
+          },
+        ],
+        knockout_rounds: [],
+      },
+    ];
+
+    render(<TournamentsTab gameState={state} onSelectTeam={vi.fn()} />);
+
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "cl-1" } });
+
+    // The overview shows the group table while the knockout is unseeded.
+    expect(screen.getByText("Group A")).toBeInTheDocument();
+    expect(screen.getByTestId("tournaments-group-cl-1-group-A")).toBeInTheDocument();
+
+    // The bracket view shows it too.
+    fireEvent.click(screen.getByRole("button", { name: /Bracket/i }));
+    expect(screen.getAllByTestId("tournaments-group-cl-1-group-A").length).toBeGreaterThan(0);
+  });
+
+  it("renders nation names for a World Cup instead of Unknown", () => {
+    const state = createGameState(true);
+    state.national_teams = [
+      {
+        id: "nt-bra",
+        name: "Brazil",
+        football_nation: "BR",
+        squad_player_ids: [],
+        reputation: 500,
+        fixtures: [],
+      },
+      {
+        id: "nt-fra",
+        name: "France",
+        football_nation: "FR",
+        squad_player_ids: [],
+        reputation: 500,
+        fixtures: [],
+      },
+    ];
+    state.competitions = [
+      state.league!,
+      {
+        id: "wc-2026",
+        name: "World Cup 2026",
+        season: 2026,
+        kind: "InternationalNation",
+        rules: { format: "GroupAndKnockout", counts_in_season_flow: true },
+        participant_ids: ["nt-bra", "nt-fra"],
+        fixtures: [
+          createFixture({
+            id: "wc-f1",
+            home_team_id: "nt-bra",
+            away_team_id: "nt-fra",
+            competition: "InternationalNation",
+            status: "Scheduled",
+            result: null,
+          }),
+        ],
+        standings: [],
+        groups: [
+          {
+            id: "wc-group-A",
+            name: "A",
+            team_ids: ["nt-bra", "nt-fra"],
+            standings: [
+              {
+                team_id: "nt-bra",
+                played: 0,
+                won: 0,
+                drawn: 0,
+                lost: 0,
+                goals_for: 0,
+                goals_against: 0,
+                points: 0,
+              },
+              {
+                team_id: "nt-fra",
+                played: 0,
+                won: 0,
+                drawn: 0,
+                lost: 0,
+                goals_for: 0,
+                goals_against: 0,
+                points: 0,
+              },
+            ],
+          },
+        ],
+        knockout_rounds: [],
+      },
+    ];
+
+    render(<TournamentsTab gameState={state} onSelectTeam={vi.fn()} />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "wc-2026" } });
+
+    expect(screen.getByText("Brazil")).toBeInTheDocument();
+    expect(screen.getByText("France")).toBeInTheDocument();
+    expect(screen.queryByText("Unknown")).not.toBeInTheDocument();
+  });
+
+  it("marks the relegation zone in pyramid standings", () => {
+    const state = createGameState(true);
+    const standing = (teamId: string, points: number) => ({
+      team_id: teamId,
+      played: 2,
+      won: points / 3,
+      drawn: 0,
+      lost: 2 - points / 3,
+      goals_for: points,
+      goals_against: 2,
+      points,
+    });
+    state.competitions = [
+      {
+        id: "eng-1",
+        name: "First Division",
+        season: 1,
+        country_id: "ENG",
+        priority: 0,
+        participant_ids: ["team-1", "team-2", "team-3", "team-4"],
+        fixtures: [],
+        standings: [
+          standing("team-1", 6),
+          standing("team-2", 3),
+          standing("team-3", 3),
+          standing("team-4", 0),
+        ],
+      },
+      {
+        id: "eng-2",
+        name: "Second Division",
+        season: 1,
+        country_id: "ENG",
+        priority: 1,
+        participant_ids: ["team-5", "team-6", "team-7", "team-8"],
+        fixtures: [],
+        standings: [],
+      },
+    ];
+
+    render(<TournamentsTab gameState={state} onSelectTeam={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Standings/i }));
+
+    expect(screen.getByTestId("tournaments-relegation-team-4")).toBeInTheDocument();
+    expect(screen.queryByTestId("tournaments-relegation-team-3")).not.toBeInTheDocument();
+    expect(screen.getByText("Relegation")).toBeInTheDocument();
   });
 
   it("renders manager of the season in the awards view", async () => {
