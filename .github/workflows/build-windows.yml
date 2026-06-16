@@ -15,7 +15,7 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,22 +38,23 @@ jobs:
         run: npm install
 
       - name: Build Tauri application
-        uses: tauri-apps/tauri-action@v0
+        run: npm run tauri build
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_HOME: ${{ runner.temp }}/cargo_home
+          RUSTUP_HOME: ${{ runner.temp }}/rustup_home
 
       - name: Upload Windows executable
         uses: actions/upload-artifact@v4
         with:
           name: Openfoot-Manager-Windows
-          path: src-tauri/target/release/Openfoot Manager.exe
+          path: src-tauri/target/release/Openfoot\ Manager.exe
           retention-days: 30
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          files: src-tauri/target/release/Openfoot Manager.exe
+          files: src-tauri/target/release/Openfoot\ Manager.exe
           draft: false
           prerelease: false
         env:
